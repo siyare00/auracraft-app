@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AuraCraft
 
-## Getting Started
+AuraCraft is a Next.js development preview with an image-upload prototype. It does not yet include authentication, image generation, project persistence, billing, or a verified production deployment.
 
-First, run the development server:
+## Run locally
 
-```bash
+Use Node.js 24 (see `.nvmrc`):
+
+```sh
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`. The prototype is at `/test`. No cloud credentials are needed to build, test, or view it.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Upload safety
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Uploads are intentionally unavailable. `GET /api/r2-sign` returns 405, and `POST /api/r2-sign` returns 503. There is no environment switch, static token, or anonymous mode that turns signing on.
 
-## Learn More
+`lib/server/upload-handler.ts` defines the tested integration contract for real session verification, durable quota/intent reservation, and storage signing. The public route supplies no integration. `lib/server/r2-signer.ts` preserves the R2 prototype as a dormant server-side helper; it is not invoked by the public route.
 
-To learn more about Next.js, take a look at the following resources:
+The UI and handler accept only declared JPEG/PNG/WebP images up to 5 MiB. These are metadata checks, not validation of file contents. Files must stay private until a server-side verification workflow approves an immutable asset. Presigned URLs are reusable bearer capabilities until expiry, not single-use uploads.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Do not enable the route until the requirements in [the launch checklist](docs/LAUNCH_CHECKLIST.md) are satisfied and tested against an approved non-production R2 account.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Checks
 
-## Deploy on Vercel
+```sh
+npm test              # Node's test runner; no cloud credentials or service calls
+npm run lint
+npm run typecheck
+npm run build
+npm run check         # all four checks
+npm audit --audit-level=high
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+GitHub Actions runs checks on pull requests and pushes to main. A draft PR is a reviewable safety improvement, not a launch approval. Dependency audit results are a point-in-time check, not a guarantee of security.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Configuration
+
+There are no required environment variables for the disabled prototype. Existing R2 variables are not read by the route. Future server-side integration will need a private bucket and validated account/bucket configuration, approved credentials, an exact HTTPS app origin, a real session verifier, and durable quotas. Never expose credentials through `NEXT_PUBLIC_*`, committed files, logs, or browser code.
+
+## Remaining launch work
+
+See [docs/LAUNCH_CHECKLIST.md](docs/LAUNCH_CHECKLIST.md) for authentication, storage verification, generation backend, product experience, dependency/security review, staging, and production-domain/TLS requirements. The relationship between this source repository and `auracraft.ai` still needs verification.
